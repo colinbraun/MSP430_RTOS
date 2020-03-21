@@ -1,0 +1,8 @@
+.ccsproject
+.cproject
+.project
+.launches/*
+.settings/*
+Debug/
+lnk_msp430fr6989.cmd
+targetConfigs/*
