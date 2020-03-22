@@ -18,6 +18,7 @@ void rtosSetup() {
 	currentProc = 0;
 	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
 	P1DIR |= BIT0;
+	P1OUT &= ~BIT0;
 	processes = (PCB*)malloc(10 * sizeof(PCB));
 }
 
@@ -36,7 +37,7 @@ void rtosInitTask(void (*func)()) {
 unsigned char rtosRun() {
 	unsigned int id0 = (processes->id);
 	unsigned int id1 = ((processes+1)->id);
-	TA0CCR0 = 300; // Set up timer to generate interrupt every 30us
+	TA0CCR0 = 300; // Set up timer to generate interrupt every 300us
 	TA0CTL = SMCLK | UP; // Set SMCLK, UP MODE
 	TA0CCTL0 = CCIE; // Enable interrupt for Timer0
 	_BIS_SR(GIE); // activate interrupts
@@ -48,5 +49,7 @@ unsigned char rtosRun() {
 // Timer0 Interrupt Service Routine
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer0_ISR(void) {
-	P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
+	// P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
+	__asm("	XOR.B #1, &0x202"); // test some asm code to toggle the red led (this works)
+	// Do all the task managing
 }
