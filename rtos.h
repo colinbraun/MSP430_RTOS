@@ -18,7 +18,7 @@ typedef struct PCB {
 } PCB;
 
 // Global variable to hold the processes
-PCB processes[10];
+PCB* processes;
 // Hold the total number of processes in the list
 unsigned char size;
 // Hold the index of the current process
@@ -29,5 +29,7 @@ void rtosInitTask(void (*func) (void));
 void rtosSetup();
 
 unsigned char rtosRun();
+
+__interrupt void Timer0_ISR(void);
 
 #endif /* RTOS_H_ */

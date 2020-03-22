@@ -1,16 +1,29 @@
 #include <msp430.h> 
 #include "rtos.h"
 
+
 void Task2(void);
+void task1(void);
 
 /**
  * main.c
  */
-int main(void)
-{
+void main(void) {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
-	rtosInitTask(&Task2);
-	return 0;
+	rtosSetup();
+	 rtosInitTask(&Task2);
+	 rtosInitTask(&task1);
+	 rtosRun();
+	while (1)
+		;
+}
+
+
+/*
+ * task1() function. Nothing here yet, just using it to test having multiple processes
+ */
+void task1(void) {
+
 }
 
 
@@ -31,8 +44,7 @@ int main(void)
 //************************************************************************
 unsigned char HoldGreenLED = 3;
 
-void Task2(void)
-{
+void Task2(void) {
 // Setup - runs once
 	unsigned char count = 0;   // local variable
 
@@ -43,7 +55,7 @@ void Task2(void)
 	TA2CTL = 0x0114;     // start TA2 timer from zero in UP mode with ACLK
 
 // loop that repeats forever - 1Hz 50% DC signl or on for HoldGreenLED seconds
-	while(1)             // infinite loop
+	while (1)             // infinite loop
 	{
 // 1 Hz 50% DC signal
 		if (TA2CTL & BIT0)     // check if timer finished counting
@@ -51,33 +63,33 @@ void Task2(void)
 			TA2CTL &= ~BIT0;     // reset timer flag
 			P9OUT ^= BIT7;       // toggle P9.7 (Green LED)
 			count++;             // increment counter
-		}//end if (TA2CTL & BIT0)
+		}             //end if (TA2CTL & BIT0)
 
 // every three seconds get HoldGreenLED value and make P9.7 high
 		if (count >= 6)        // 3 seconds elapsed?
-		{
+				{
 			TA2CCR0 = 32768;     // set timer to count for 1 second
-			TA2CTL = 0x0114;     // start TA2 timer from zero in UP mode with ACLK
+			TA2CTL = 0x0114;   // start TA2 timer from zero in UP mode with ACLK
 			P9OUT |= BIT7;       // Turn On P9.7 (Green LED)
 
-			count = HoldGreenLED;     // set local variable equal to global variable
-                                // how many seconds to keep P9.7 high
+			count = HoldGreenLED; // set local variable equal to global variable
+			// how many seconds to keep P9.7 high
 			while (count > 0)         // count down to zero
 			{
-				if (TA2CTL & BIT0)      // check if timer done counting to 1 second
+				if (TA2CTL & BIT0)   // check if timer done counting to 1 second
 				{
 					TA2CTL &= ~BIT0;      // reset timer flag
 					count--;              // decrement counter
 				}
-			}//end while(count > 0)
+			}              //end while(count > 0)
 
 // Done with P9.7 high, go back to 1 Hz 50% DC signal
 			TA2CCR0 = 16384;      // setup TA2 timer to count for 0.5 second
-			TA2CTL = 0x0114;      // start TA2 timer from zero in UP mode with ACLK
+			TA2CTL = 0x0114;   // start TA2 timer from zero in UP mode with ACLK
 			P9OUT ^= BIT7;        // start with P9.7 (Green LED) off
 
-		}//end if (count >= 6)
+		}        //end if (count >= 6)
 
-	}//end while(1)
+	}        //end while(1)
 
-}//end Task2()
+}        //end Task2()
