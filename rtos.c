@@ -26,7 +26,7 @@ void rtosInitTask(void (*func)()) {
 	PCB process;
 	process.id = size;
 	process.function = func;
-	addToListHead(&processes, process);
+	addToListEnd(&processes, process);
 	size++;
 }
 

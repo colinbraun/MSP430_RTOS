@@ -14,8 +14,25 @@ void addToListHead(PCBNode** head, PCB data) {
 	(*head) = node;
 }
 
+void addToListEnd(PCBNode** head, PCB data) {
+	if (!head)
+		return;
+	PCBNode* next = *head;
+	if (!next) {
+		addToListHead(head, data);
+		return;
+	}
+	while (next->next) {
+		next = next->next;
+	}
+	PCBNode* new_node = (PCBNode*) malloc(sizeof(PCBNode));
+	new_node->next = NULL;
+	new_node->data = data;
+	next->next = new_node;
+}
+
 void destroyList(PCBNode** head) {
-	if(head == 0)
+	if (!head)
 		return;
 	PCBNode* next = *head;
 	while (next) {

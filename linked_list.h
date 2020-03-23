@@ -27,6 +27,11 @@ typedef struct Node {
 void addToListHead(PCBNode** head, PCB data);
 
 /*
+ * Add an element to the end of the list
+ */
+void addToListEnd(PCBNode** head, PCB data);
+
+/*
  * Clean up the passed list (deallocate the memory)
  */
 void destroyList(PCBNode** head);
