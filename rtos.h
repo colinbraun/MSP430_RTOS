@@ -9,16 +9,19 @@
 #define RTOS_H_
 
 #include <stdint.h>
+#include <msp430.h>
+#include <stdlib.h>
+#include "linked_list.h"
 
 // A Process Control Block.
 // Each one of these will be associated with a process
-typedef struct PCB {
+/*typedef struct PCB {
 	uint16_t id;
 	void (*function) (void);
-} PCB;
+} PCB;*/
 
 // Global variable to hold the processes
-PCB* processes;
+PCBNode* processes;
 // Hold the total number of processes in the list
 unsigned char size;
 // Hold the index of the current process

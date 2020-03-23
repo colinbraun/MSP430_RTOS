@@ -5,9 +5,8 @@
  *      Author: Colin
  */
 
-#include <msp430.h>
-#include <stdlib.h>
 #include "rtos.h"
+#include "linked_list.h"
 
 #define ENABLE_PINS 0xFFFE // Required to use inputs and outputs
 #define SMCLK 0x0200 // Timer ACLK source
@@ -19,13 +18,15 @@ void rtosSetup() {
 	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
 	P1DIR |= BIT0;
 	P1OUT &= ~BIT0;
-	processes = (PCB*)malloc(10 * sizeof(PCB));
+	//processes = (PCB*)malloc(10 * sizeof(PCB));
+	processes = NULL;
 }
 
 void rtosInitTask(void (*func)()) {
-	PCB* process = (processes+size);
-	process->id = size;
-	process->function = func;
+	PCB process;
+	process.id = size;
+	process.function = func;
+	addToListHead(&processes, process);
 	size++;
 }
 
@@ -35,8 +36,8 @@ void rtosInitTask(void (*func)()) {
  * Returns: 0 if all tasks completed, not 0 if an error occurred
  */
 unsigned char rtosRun() {
-	unsigned int id0 = (processes->id);
-	unsigned int id1 = ((processes+1)->id);
+	unsigned int id0 = processes->data.id;
+	unsigned int id1 = processes->next->data.id;
 	TA0CCR0 = 300; // Set up timer to generate interrupt every 300us
 	TA0CTL = SMCLK | UP; // Set SMCLK, UP MODE
 	TA0CCTL0 = CCIE; // Enable interrupt for Timer0
