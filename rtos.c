@@ -18,7 +18,6 @@ void rtosSetup() {
 	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
 	P1DIR |= BIT0;
 	P1OUT &= ~BIT0;
-	//processes = (PCB*)malloc(10 * sizeof(PCB));
 	processes = NULL;
 }
 
@@ -30,11 +29,6 @@ void rtosInitTask(void (*func)()) {
 	size++;
 }
 
-/*
- * Run the currently loaded processes.
- *
- * Returns: 0 if all tasks completed, not 0 if an error occurred
- */
 unsigned char rtosRun() {
 	unsigned int id0 = processes->data.id;
 	unsigned int id1 = processes->next->data.id;
@@ -52,5 +46,9 @@ unsigned char rtosRun() {
 __interrupt void Timer0_ISR(void) {
 	// P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
 	__asm("	XOR.B #1, &0x202"); // test some asm code to toggle the red led (this works)
+	//size_t addr = &pcb_test;
+	//size_t another_val = &rtosRun;
+	loadProcData(&pcb_test);
+	//PCB result = pcb_test;
 	// Do all the task managing
 }
