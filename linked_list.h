@@ -8,10 +8,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define PROCESS_RAM 256 // Each process will have 256 words of ram
 //typedef struct PCB PCB;
 typedef struct PCB {
-	uint16_t id;
-	void (*function) (void);
+	uint16_t id; // The process id
+	void (*function) (void); // The function itself
+	uint16_t *stackPointer; // Where the process's stack pointer points to
+	uint16_t ram[PROCESS_RAM]; // The processes' ram
 } PCB;
 
 typedef struct Node {

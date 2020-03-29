@@ -5,6 +5,7 @@
 .settings/*
 Debug/*
 targetConfigs/*
+*.doc*
 
 # Prerequisites
 *.d

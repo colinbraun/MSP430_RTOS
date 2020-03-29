@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include "linked_list.h"
 
+#define MAX_PROCS 3 // The maximum number of processes that can held at once
+#define NUM_GEN_REGS 12 // The number of general purpose registers (R4-R15)
+
 void loadProcData(PCB* pcb);
 // A Process Control Block.
 // Each one of these will be associated with a process
@@ -22,8 +25,9 @@ void loadProcData(PCB* pcb);
 } PCB;*/
 
 // Global variable to hold the processes
-PCBNode* processes;
-PCB pcb_test;
+PCB processes[MAX_PROCS];
+//PCBNode* processes;
+//PCB pcb_test;
 // Hold the total number of processes in the list
 unsigned char size;
 // Hold the index of the current process
