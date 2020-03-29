@@ -1,7 +1,6 @@
 #include <msp430.h> 
 #include "rtos.h"
 
-
 void Task2(void);
 void task1(void);
 
@@ -11,13 +10,12 @@ void task1(void);
 void main(void) {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 	rtosSetup();
-	 rtosInitTask(&Task2);
-	 rtosInitTask(&task1);
-	 rtosRun();
+	rtosInitTask(&Task2);
+	rtosInitTask(&task1);
+	rtosRun();
 	while (1)
 		;
 }
-
 
 /*
  * task1() function. Nothing here yet, just using it to test having multiple processes
@@ -25,7 +23,6 @@ void main(void) {
 void task1(void) {
 
 }
-
 
 //************************************************************************
 // void Task2(void) Function

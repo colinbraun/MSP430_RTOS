@@ -15,8 +15,21 @@
 
 #define MAX_PROCS 3 // The maximum number of processes that can held at once
 #define NUM_GEN_REGS 12 // The number of general purpose registers (R4-R15)
+#define LOAD_CONTEXT() asm volatile ( "\tpop r15 \n\t \
+	                 pop r14 \n\t\
+	                 pop r13 \n\t\
+	                 pop r12 \n\t\
+	                 pop r11 \n\t\
+	                 pop r10 \n\t\
+	                 pop r9  \n\t\
+	                 pop r8  \n\t\
+	                 pop r7  \n\t\
+	                 pop r6  \n\t\
+	                 pop r5  \n\t\
+	                 pop r4  \n\t\
+	                 reti"\
+	               )
 
-void loadProcData(PCB* pcb);
 // A Process Control Block.
 // Each one of these will be associated with a process
 /*typedef struct PCB {
@@ -29,10 +42,11 @@ PCB processes[MAX_PROCS];
 //PCBNode* processes;
 //PCB pcb_test;
 // Hold the total number of processes in the list
-unsigned char size;
+volatile unsigned char size;
 // Hold the index of the current process
-unsigned char currentProc;
+volatile unsigned char currentProc;
 
+volatile uint32_t *oldStackPointer;
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked
  */
