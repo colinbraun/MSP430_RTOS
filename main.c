@@ -21,7 +21,9 @@ void main(void) {
  * task1() function. Nothing here yet, just using it to test having multiple processes
  */
 void task1(void) {
-
+	while (1) {
+		P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
+	}
 }
 
 //************************************************************************

@@ -30,13 +30,13 @@ void rtosInitTask(void (*func)()) {
 
 	// Load the process's function as the return address. Still need the other 4 bits of the 20-bit address
 	*processes[size].stackPointer = (uint16_t) func;
-	*processes[size].stackPointer--;
+	processes[size].stackPointer--;
 	// Now load the upper-most 4 bits of the 20-bit return address into the upper-most 16 bits of the next word.
 	*processes[size].stackPointer = (((0xF0000 & (uint32_t) func)
 			>> 4) | GIE); // Bitwise or with initial SR settings (enable interrupts)
 
 	// Make room for general purpose registers
-	*processes[size].stackPointer -= NUM_GEN_REGS;
+	processes[size].stackPointer -= NUM_GEN_REGS;
 
 	size++;
 }
@@ -66,9 +66,10 @@ unsigned char rtosRun() {
 // Timer0 Interrupt Service Routine - The scheduler
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer0_ISR(void) {
-	P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
+	//P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
 	// Store the context onto the stack.
 	// Don't need to store the PC or SR, since they are already on THIS stack from the interrupt happening.
+	asm volatile ("\tPOPM.A #5, R15"); // The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
 	asm volatile ("\tpush r4  \n\t push r5  \n\t\
 	                 push r6  \n\t\
 	                 push r7  \n\t\
@@ -80,16 +81,16 @@ __interrupt void Timer0_ISR(void) {
 	                 push r13 \n\t\
 	                 push r14 \n\t\
 	                 push r15");
-	asm volatile ("\tmov.w R1, oldStackPointer");
+	asm volatile ("\tmovx.a R1, oldStackPointer");
 	// Store the stack pointer for the previously running process
 	processes[currentProc].stackPointer = oldStackPointer;
-	if (currentProc < size)
+	if (currentProc < size - 1)
 		currentProc++;
 	else
 		currentProc = 0;
 	oldStackPointer = processes[currentProc].stackPointer;
 	// Load the stack pointer for the next process
-	asm volatile ("\tmov.w oldStackPointer, R1");
+	asm volatile ("\tmovx.a oldStackPointer, R1");
 
 	// Load the context from the newly loaded stack
 	LOAD_CONTEXT();

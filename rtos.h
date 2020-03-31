@@ -46,7 +46,7 @@ volatile unsigned char size;
 // Hold the index of the current process
 volatile unsigned char currentProc;
 
-volatile uint32_t *oldStackPointer;
+volatile uint16_t *oldStackPointer;
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked
  */
