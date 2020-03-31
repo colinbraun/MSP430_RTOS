@@ -59,6 +59,10 @@ void rtosInitTask(void (*func) (void));
 void rtosSetup();
 
 /*
+ * Function that is returned to when a process terminates
+ */
+void processTerminate();
+/*
  * Run the currently loaded processes.
  *
  * Returns: 0 if all tasks completed, not 0 if an error occurred

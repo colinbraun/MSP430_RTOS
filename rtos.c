@@ -24,21 +24,33 @@ void rtosSetup() {
 void rtosInitTask(void (*func)()) {
 	processes[size].id = size;
 	processes[size].function = func;
-	//uint32_t addr = (uint32_t)func;
+	uint32_t addr = (uint32_t)func;
 	processes[size].stackPointer = &processes[size].ram[PROCESS_RAM - 1];
-	//addr = &processes[size].ram[PROCESS_RAM - 1];
+	addr = &processes[size].ram[PROCESS_RAM - 1];
+
+	// Create the return address for process
+	processes[size].stackPointer--;
+	*((uint32_t*)processes[size].stackPointer) = (uint32_t)(&processTerminate);
+
+	uint32_t addr2 = &processTerminate;
+	processes[size].stackPointer--;
 
 	// Load the process's function as the return address. Still need the other 4 bits of the 20-bit address
 	*processes[size].stackPointer = (uint16_t) func;
 	processes[size].stackPointer--;
 	// Now load the upper-most 4 bits of the 20-bit return address into the upper-most 16 bits of the next word.
-	*processes[size].stackPointer = (((0xF0000 & (uint32_t) func)
-			>> 4) | GIE); // Bitwise or with initial SR settings (enable interrupts)
+	*processes[size].stackPointer = (((0xF0000 & (uint32_t) func) >> 4) | GIE); // Bitwise or with initial SR settings (enable interrupts)
 
 	// Make room for general purpose registers
 	processes[size].stackPointer -= NUM_GEN_REGS;
 
 	size++;
+}
+
+void processTerminate() {
+	while (1) {
+
+	}
 }
 
 unsigned char rtosRun() {
@@ -51,7 +63,8 @@ unsigned char rtosRun() {
 	uint32_t *addr = oldStackPointer;
 	uint32_t addr_addr = &oldStackPointer;
 	asm volatile ("\tmovx.a oldStackPointer, R1");
-	LOAD_CONTEXT(); // This will enable interrupts
+	LOAD_CONTEXT();
+	// This will enable interrupts
 	while (1)
 		;
 	return 0;
@@ -69,7 +82,8 @@ __interrupt void Timer0_ISR(void) {
 	//P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
 	// Store the context onto the stack.
 	// Don't need to store the PC or SR, since they are already on THIS stack from the interrupt happening.
-	asm volatile ("\tPOPM.A #5, R15"); // The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
+	asm volatile ("\tPOPM.A #5, R15");
+	// The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
 	asm volatile ("\tpush r4  \n\t push r5  \n\t\
 	                 push r6  \n\t\
 	                 push r7  \n\t\
