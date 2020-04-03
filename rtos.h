@@ -41,12 +41,20 @@
 PCB processes[MAX_PROCS];
 //PCBNode* processes;
 //PCB pcb_test;
-// Hold the total number of processes in the list
-volatile unsigned char size;
-// Hold the index of the current process
-volatile unsigned char currentProc;
 
+// Hold the index (and id, inherently) of the current process
+volatile uint8_t currentProc;
+
+// A placeholder for a stack pointer (when switching out stacks)
 volatile uint16_t *oldStackPointer;
+
+// Hold a pointer to the stack for right after rtosRun() is called.
+volatile uint16_t *rtosStackPointer;
+
+// Each bit represents a process, 0 = free, 1 = used
+volatile uint16_t availableProcs;
+
+volatile char procEnded;
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked
  */
@@ -61,11 +69,30 @@ void rtosSetup();
 /*
  * Function that is returned to when a process terminates
  */
-void processTerminate();
+static void processTerminate();
 /*
  * Run the currently loaded processes.
  *
  * Returns: 0 if all tasks completed, not 0 if an error occurred
+ */
+
+/*
+ * Remove a process from the pool of currently running ones
+ * NOTE: It is the caller of this function's job to be concerned with an interrupt happening during this function.
+ * It is likely (not tested) that this function is thread-safe, since a 16-bit assignment is usually atomic.
+ * However, computing the value to be stored may take several instructions, if that is of any concern.
+ *
+ * param id - the id of the process to remove
+ */
+void removeProc(uint8_t id);
+
+/*
+* Find the next process id from the current one
+*/
+uint8_t findNextProc();
+
+/*
+ * Run the RTOS with the already loaded tasks/processes
  */
 unsigned char rtosRun();
 

@@ -1,7 +1,7 @@
 #include <msp430.h> 
 #include "rtos.h"
 
-void Task2(void);
+void task2(void);
 void task1(void);
 
 /**
@@ -10,7 +10,9 @@ void task1(void);
 void main(void) {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
 	rtosSetup();
-	rtosInitTask(&Task2);
+
+	rtosInitTask(&task2);
+
 	rtosInitTask(&task1);
 	rtosRun();
 	while (1)
@@ -44,7 +46,7 @@ void task1(void) {
 //************************************************************************
 unsigned char HoldGreenLED = 3;
 
-void Task2(void) {
+void task2(void) {
 // Setup - runs once
 	unsigned char count = 0;   // local variable
 
