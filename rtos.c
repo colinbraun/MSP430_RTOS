@@ -64,9 +64,9 @@ static void processTerminate() {
 	// If there are no more processes
 	if (!availableProcs) {
 		// Set the return value to be 0
-		asm volatile ("\tmov.w #0, R0");
+		asm volatile ("\tmov.w #0, R12");
 		// Move the stack pointer back to where it was right after rtosRun was called (so the stack pointer has the correct return address)
-		asm volatile ("\tmovx.a R1, rtosStackPointer");
+		asm volatile ("\tmovx.a rtosStackPointer, R1");
 		return;
 	}
 	// The next process will automatically be selected by the timer interrupt
