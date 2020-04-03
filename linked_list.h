@@ -13,7 +13,7 @@
 typedef struct PCB {
 	uint8_t id; // The process id. This should map directly to the index of the array it's stored in
 	void (*function) (void); // The function itself
-	uint16_t *stackPointer; // Where the process's stack pointer points to
+	volatile uint16_t *stackPointer; // Where the process's stack pointer points to
 	uint16_t ram[PROCESS_RAM]; // The processes' ram
 } PCB;
 

@@ -20,27 +20,26 @@ void rtosSetup() {
 	P1OUT &= ~BIT0;
 	uint8_t i;
 	// Initialize all the process ids
-	for(i = 0; i < MAX_PROCS; i++) {
+	for (i = 0; i < MAX_PROCS; i++) {
 		processes[i].id = i;
 	}
 }
 
 void rtosInitTask(void (*func)()) {
 	uint8_t i = 0;
-	while(availableProcs & (1 << i))
+	while (availableProcs & (1 << i))
 		i++;
 	availableProcs |= (1 << i);
 	processes[i].function = func;
-	uint32_t addr = (uint32_t) func;
+	//uint32_t addr = (uint32_t) func;
 	processes[i].stackPointer = &processes[i].ram[PROCESS_RAM - 1];
-	addr = &processes[i].ram[PROCESS_RAM - 1];
+	//addr = &processes[i].ram[PROCESS_RAM - 1];
 
 	// Create the return address for process
 	processes[i].stackPointer--;
-	*((uint32_t*) processes[i].stackPointer) =
-			(uint32_t) (&processTerminate);
+	*((uint32_t*) processes[i].stackPointer) = (uint32_t) (&processTerminate);
 
-	uint32_t addr2 = &processTerminate;
+	// uint32_t addr2 = &processTerminate;
 	processes[i].stackPointer--;
 
 	// Load the process's function as the return address. Still need the other 4 bits of the 20-bit address
@@ -88,7 +87,7 @@ static void processTerminate() {
  *
  * param id - the id of the process to remove
  */
-void removeProc(uint8_t id) {
+inline void removeProc(uint8_t id) {
 	availableProcs &= ~(1 << id);
 }
 
@@ -99,17 +98,15 @@ unsigned char rtosRun() {
 	// Store the stack pointer at this point (will need it when there are no more processes)
 	// note, when restoring this, whatever is in R12 will be the return value.
 	asm volatile ("\tmovx.a R1, rtosStackPointer");
-	//unsigned int id0 = processes->data.id;
-	//unsigned int id1 = processes->next->data.id;
 	oldStackPointer = processes[0].stackPointer;
-	TA0CCR0 = 300; // Set up timer to generate interrupt every 300us
+	// Set up timer to generate interrupt every 900us. Too short and OS takes a lot of time. Too long and the responsiveness of tasks will be poor.
+	// The faster the OS switches context, the lower we can justify this to be.
+	TA0CCR0 = 900;
 	TA0CTL = SMCLK | UP; // Set SMCLK, UP MODE
 	TA0CCTL0 = CCIE; // Enable interrupt for Timer0
-	//uint32_t *addr = oldStackPointer;
-	//uint32_t addr_addr = &oldStackPointer;
 	asm volatile ("\tmovx.a oldStackPointer, R1");
-	LOAD_CONTEXT();
-	// This will enable interrupts
+	LOAD_CONTEXT(); // This will enable interrupts
+
 	while (1)
 		;
 	// This will never happen. The actual return of this function takes place in processTerminate()
@@ -117,7 +114,8 @@ unsigned char rtosRun() {
 }
 
 /*
- * Find the next process id from the current one
+ * Find the next process id from the current one.
+ * Wish to maybe improve this through a different appraoch to process management, since it takes a lot of computing time to switch tasks
  */
 inline uint8_t findNextProc() {
 	uint8_t nextProc = currentProc + 1;
@@ -139,13 +137,12 @@ inline uint8_t findNextProc() {
 // Timer0 Interrupt Service Routine - The scheduler
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer0_ISR(void) {
-	//P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
-	// Store the context onto the stack.
-	// Don't need to store the PC or SR, since they are already on THIS stack from the interrupt happening.
-	asm volatile ("\tPOPM.A #5, R15");
+
+	asm volatile ("\tPOPM.A #5, R15"); // The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
 	// If we aren't coming from a process ending, then...
 	if (!procEnded) {
-		// The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
+		// Store the context onto the stack.
+		// Don't need to store the PC or SR, since they are already on THIS stack from the interrupt happening.
 		asm volatile ("\tpush r4  \n\t push r5  \n\t\
 	                 push r6  \n\t\
 	                 push r7  \n\t\
