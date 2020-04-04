@@ -33,9 +33,9 @@
 // A Process Control Block.
 // Each one of these will be associated with a process
 /*typedef struct PCB {
-	uint16_t id;
-	void (*function) (void);
-} PCB;*/
+ uint16_t id;
+ void (*function) (void);
+ } PCB;*/
 
 // Global variable to hold the processes
 PCB processes[MAX_PROCS];
@@ -54,11 +54,15 @@ volatile uint16_t *rtosStackPointer;
 // Each bit represents a process, 0 = free, 1 = used
 volatile uint16_t availableProcs;
 
+// If a process just ended, scheduler will need to behave differently. It checks this.
 volatile char procEnded;
+
+volatile void (*buttonCallbacks[MAX_PROCS])(uint8_t button);
+volatile uint8_t numButtonCallbacks;
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked
  */
-void rtosInitTask(void (*func) (void));
+void rtosInitTask(void (*func)(void));
 
 /*
  * Set up the rtos.
@@ -84,12 +88,18 @@ static void processTerminate();
  *
  * param id - the id of the process to remove
  */
-void removeProc(uint8_t id);
+inline void removeProc(uint8_t id);
 
 /*
-* Find the next process id from the current one
-*/
-uint8_t findNextProc();
+ * Find the next process id from the current one
+ */
+inline uint8_t findNextProc();
+
+/*
+ * Function to call to tell the OS to switch to another task for now.
+ * This is intended to be called by tasks that wish to end their current time slice and wait for their next
+ */
+void sleep();
 
 /*
  * Run the RTOS with the already loaded tasks/processes

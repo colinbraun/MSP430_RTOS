@@ -3,6 +3,7 @@
 
 void task2(void);
 void task1(void);
+void task3(void);
 
 /**
  * main.c
@@ -13,7 +14,7 @@ void main(void) {
 
 	rtosInitTask(&task2);
 
-	rtosInitTask(&task1);
+	rtosInitTask(&task3);
 	rtosRun();
 	while (1)
 		;
@@ -22,11 +23,16 @@ void main(void) {
 /*
  * task1() function. Nothing here yet, just using it to test having multiple processes
  */
-void task1(void) {
+void task3(void) {
 	while (1) {
+		sleep();
 		P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
 	}
 	//return;
+}
+
+void task1(void) {
+	return;
 }
 
 //************************************************************************

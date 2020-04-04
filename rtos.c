@@ -105,10 +105,9 @@ unsigned char rtosRun() {
 	TA0CTL = SMCLK | UP; // Set SMCLK, UP MODE
 	TA0CCTL0 = CCIE; // Enable interrupt for Timer0
 	asm volatile ("\tmovx.a oldStackPointer, R1");
-	LOAD_CONTEXT(); // This will enable interrupts
+	LOAD_CONTEXT();
+	// This will enable interrupts
 
-	while (1)
-		;
 	// This will never happen. The actual return of this function takes place in processTerminate()
 	return 0;
 }
@@ -128,6 +127,10 @@ inline uint8_t findNextProc() {
 	return nextProc;
 }
 
+void sleep() {
+	TA0CCTL0 |= CCIFG;
+}
+
 /*
  * NOTE <----------------------------------------------------------------------------
  * DO NOT DECLARE VARIABLES IN THIS FUNCTION.
@@ -138,7 +141,8 @@ inline uint8_t findNextProc() {
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer0_ISR(void) {
 
-	asm volatile ("\tPOPM.A #5, R15"); // The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
+	asm volatile ("\tPOPM.A #5, R15");
+	// The interrupt does PUSHM.A #5, R15 at the beginning. This was causing a headache. Temporary fix for now.
 	// If we aren't coming from a process ending, then...
 	if (!procEnded) {
 		// Store the context onto the stack.
@@ -167,3 +171,54 @@ __interrupt void Timer0_ISR(void) {
 	// Load the context from the newly loaded stack
 	LOAD_CONTEXT();
 }
+
+//***********************************************************************
+//* Port 2 Interrupt Service Routine
+//*
+//* Colin Braun
+//*
+//* If P1.1 is pressed, call all the callbacks passing 1
+//* If P1.2 is press, call all the callbacks passing 2
+//* Then, clear the IV.
+//***********************************************************************
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1(void) {
+
+	// Better "best of" debounce
+	unsigned char k; // iterator
+	unsigned char debounce = 0;	// hold number of hits
+	unsigned int i;	// iterator
+
+	for (k = 0; k < 15; k++) { // check buttons 15 times
+
+		for (i = 0; i < 100; i++)
+			; // delay to check buttons (~1ms)
+
+		if (!(P1IN & 0x02) | !(P1IN & 0x04))
+			debounce++;	// if P1.1 or P1.2 pressed, count
+	} //end for(k)
+
+	if (debounce > 10) { // pressed 5 of 15 times so a button is pressed (P1.1 or P 1.2)
+		// Check which button interrupted (P1.1 or P1.2) and toggle appropriate LED
+
+		switch (P1IV) { // What is stored in P1IV?
+		case 4: // Come here if P1.1 interrupt
+		{
+			for (i = 0; i < numButtonCallbacks; i++) {
+				(*(buttonCallbacks[i]))(1);
+			}
+			break;
+		}
+		case 6: // Come here if P1.2 interrupt
+		{
+			for (i = 0; i < numButtonCallbacks; i++) {
+				(*(buttonCallbacks[i]))(2);
+			}
+			break; // Then leave switch
+		}
+		}
+	} //end if
+
+	if (P1IV)
+		; // must read port interrupt vector to reset the highest pending interrupt
+} // end ISR
