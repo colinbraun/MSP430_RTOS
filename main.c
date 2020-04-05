@@ -21,9 +21,9 @@ void main(void) {
 
 	rtosSetup(); // Initialize the RTOS
 
+	// task3 is started in task1 to prove a task can start a task while the RTOS is running
 	rtosInitTask(&task1); // Initialize task1
 	rtosInitTask(&task2); // Initialize task2
-	rtosInitTask(&task3); // Initialize task3
 
 	rtosRun(); // Run the RTOS with the initialized tasks. Tasks can add tasks in the middle of execution.
 
@@ -43,6 +43,7 @@ void task3(void) {
 }
 
 void task1(void) {
+	rtosInitTask(&task3); // Initialize task3, proving a task can start a task
 	P1DIR &= ~BIT1; // Set P1.1 as an input
 	unsigned int count = 0;
 	TA1CCR0 = 32768;     // setup TA2 timer to count for 1 second

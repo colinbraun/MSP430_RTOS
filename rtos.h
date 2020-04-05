@@ -54,7 +54,9 @@ volatile uint16_t *rtosStackPointer;
 volatile uint16_t availableProcs;
 
 // If a process just ended, scheduler will need to behave differently. It checks this.
-volatile char procEnded;
+volatile uint8_t procEnded;
+
+volatile uint8_t rtosStarted;
 
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked

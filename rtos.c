@@ -16,6 +16,8 @@
  * Should be called before any other rtos function.
  */
 void rtosSetup() {
+	rtosStarted = 0;
+	availableProcs = 0;
 	currentProc = 0;
 	procEnded = 0;
 	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
@@ -34,6 +36,8 @@ void rtosSetup() {
  * param func - A pointer to the function (task) to be initialized
  */
 void rtosInitTask(void (*func)()) {
+	// CRITICAL SECTION
+	_BIC_SR(GIE); // Disable interrupts while adding a task
 	uint8_t i = 0;
 	while (availableProcs & (1 << i))
 		i++;
@@ -55,6 +59,8 @@ void rtosInitTask(void (*func)()) {
 
 	// Make room for general purpose registers (using them as 16-bit registers, not 20-bit)
 	processes[i].stackPointer -= NUM_GEN_REGS;
+	if(rtosStarted)
+		_BIS_SR(GIE); // If the RTOS has started, re-enable interrupts
 }
 
 /*
@@ -107,6 +113,7 @@ unsigned char rtosRun() {
 	TA0CCR0 = 900;
 	TA0CTL = SMCLK | UP; // Set SMCLK, UP MODE
 	TA0CCTL0 = CCIE; // Enable interrupt for Timer0
+	rtosStarted = 1; // RTOS has started
 	asm volatile ("\tmovx.a oldStackPointer, R1");
 	LOAD_CONTEXT();
 	// This will enable interrupts
