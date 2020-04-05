@@ -1,21 +1,32 @@
 #include <msp430.h> 
 #include "rtos.h"
+#include <driverlib.h> // Required for the LCD
+#include "myGpio.h" // Required for the LCD
+#include "myClocks.h" // Required for the LCD
+#include "myLcd.h" // Required for the LCD
 
 void task2(void);
 void task1(void);
 void task3(void);
+void scrollWords(char words[250]);
 
 /**
  * main.c
  */
 void main(void) {
 	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
-	rtosSetup();
+	initGPIO(); // Initialize General Purpose Inputs and Outputs for the LCD
+	initClocks(); // Initialize clocks for the LCD
+	myLCD_init(); // Initialize Liquid Crystal Display
 
-	rtosInitTask(&task2);
+	rtosSetup(); // Initialize the RTOS
 
-	rtosInitTask(&task3);
-	rtosRun();
+	rtosInitTask(&task1); // Initialize task1
+	rtosInitTask(&task2); // Initialize task2
+	rtosInitTask(&task3); // Initialize task3
+
+	rtosRun(); // Run the RTOS with the initialized tasks. Tasks can add tasks in the middle of execution.
+
 	while (1)
 		;
 }
@@ -32,7 +43,23 @@ void task3(void) {
 }
 
 void task1(void) {
-	return;
+	P1DIR &= ~BIT1; // Set P1.1 as an input
+	unsigned int count = 0;
+	TA1CCR0 = 32768;     // setup TA2 timer to count for 1 second
+	TA1CTL = 0x0114;     // start TA2 timer from zero in UP mode with ACLK
+	while (1) {
+		if (TA1CTL & BIT0)     // check if timer finished counting
+		{
+			TA1CTL &= ~BIT0;     // reset timer flag
+			// P9OUT ^= BIT7;       // toggle P9.7 (Green LED)
+			count++;             // increment counter
+			myLCD_displayNumber(count);
+		}
+		if (!(P1IN & BIT1)) {
+			scrollWords("START OVER");
+			count = 0;
+		}
+	}
 }
 
 //************************************************************************
@@ -101,3 +128,46 @@ void task2(void) {
 	}        //end while(1)
 
 }        //end Task2()
+
+/*
+ * Function to scroll some words across the LCD
+ */
+void scrollWords(char words[250]) {
+	unsigned int length; // Contains length of message to be displayed
+	unsigned int slot; // Slot to be displayed on LCD (1, 2, 3, 4,
+	// 5, or 6)
+	unsigned int amount_shifted; // Number of times message shifted so far
+	unsigned int offset; // Used with amount_shifted to get correct
+	// character to display
+	unsigned long delay; // Used to implement delay between scrolling
+	// iterations
+	unsigned char next_char; // Next character from message to be
+	// displayed
+	length = strlen(words); // Get length of the message stored in words
+	amount_shifted = 0; // We have not shifted the message yet
+	offset = 0; // There is no offset yet
+	while (amount_shifted < length + 7) // Loop as long as you haven't shifted all
+	{ // of the characters off the LCD screen
+		offset = amount_shifted; // Starting point in message for next LCD update
+		for (slot = 1; slot <= 6; slot++) // Loop 6 times to display 6 characters at a time
+				{
+			next_char = words[offset - 6]; // Get the current character for LCD slot
+			if (next_char && (offset >= 6) && (offset <= length + 6)) // If character is not null AND
+					{ // LCD is not filled (offset>=6) AND
+					  // You have not reached end of message
+					  // (offset<=length+6)
+				myLCD_showChar(next_char, slot); // Show the next character on the LCD
+				// screen in correct slot
+			}  //end if
+			else // Else, slot on LCD should be blank
+			{
+				myLCD_showChar(' ', slot); // So, add a blank space to slot
+			} //end else
+			offset++; // Update as you move across the message
+
+		} //end for
+		for (delay = 0; delay < 75000/*123456*/; delay = delay + 1)
+			; // Delay between shifts
+		amount_shifted = amount_shifted + 1; // Update times words shifted across LCD
+	} //end while
+}
