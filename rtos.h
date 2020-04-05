@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <msp430.h>
 #include <stdlib.h>
-#include "linked_list.h"
 
 #define MAX_PROCS 3 // The maximum number of processes that can held at once
 #define NUM_GEN_REGS 12 // The number of general purpose registers (R4-R15)
@@ -30,12 +29,14 @@
 	                 reti"\
 	               )
 
-// A Process Control Block.
-// Each one of these will be associated with a process
-/*typedef struct PCB {
- uint16_t id;
- void (*function) (void);
- } PCB;*/
+#define PROCESS_RAM 256 // Each process will have 512 words of ram
+// The process control block struct
+typedef struct PCB {
+	uint8_t id; // The process id. This should map directly to the index of the array it's stored in
+	void (*function) (void); // The function itself
+	volatile uint16_t *stackPointer; // Where the process's stack pointer points to
+	uint16_t ram[PROCESS_RAM]; // The processes' ram
+} PCB;
 
 // Global variable to hold the processes
 PCB processes[MAX_PROCS];
