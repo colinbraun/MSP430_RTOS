@@ -11,6 +11,10 @@
 #define SMCLK 0x0200 // Timer ACLK source
 #define UP 0x0010 // Timer UP mode
 
+/*
+ * Set up the rtos.
+ * Should be called before any other rtos function.
+ */
 void rtosSetup() {
 	currentProc = 0;
 	procEnded = 0;
@@ -24,30 +28,32 @@ void rtosSetup() {
 	}
 }
 
+/*
+ * Add the passed function as a process that will be given time slices when rtosRun() is invoked
+ *
+ * param func - A pointer to the function (task) to be initialized
+ */
 void rtosInitTask(void (*func)()) {
 	uint8_t i = 0;
 	while (availableProcs & (1 << i))
 		i++;
 	availableProcs |= (1 << i);
+
 	processes[i].function = func;
-	//uint32_t addr = (uint32_t) func;
-	processes[i].stackPointer = &processes[i].ram[PROCESS_RAM - 1];
-	//addr = &processes[i].ram[PROCESS_RAM - 1];
+	processes[i].stackPointer = &processes[i].ram[PROCESS_RAM - 1]; // Start with the stack pointer ready to load the first word
 
 	// Create the return address for process
-	processes[i].stackPointer--;
-	*((uint32_t*) processes[i].stackPointer) = (uint32_t) (&processTerminate);
+	processes[i].stackPointer--; // Move the stack pointer down an extra word (need 32 bits for return address, already have 16)
+	*((uint32_t*) processes[i].stackPointer) = (uint32_t) (&processTerminate); // Store the return address on the process's stack
 
-	// uint32_t addr2 = &processTerminate;
-	processes[i].stackPointer--;
-
+	processes[i].stackPointer--; // Move stack pointer down 1 word to store first lower 16 bits of return address from RETI
 	// Load the process's function as the return address. Still need the other 4 bits of the 20-bit address
 	*processes[i].stackPointer = (uint16_t) func;
-	processes[i].stackPointer--;
-	// Now load the upper-most 4 bits of the 20-bit return address into the upper-most 16 bits of the next word.
+	processes[i].stackPointer--; // Move the stack pointer down 1 more word
+	// Now load the upper-most 4 bits of the 20-bit return address into the upper-most 16 bits of the next word. Also set up SR bits.
 	*processes[i].stackPointer = (((0xF0000 & (uint32_t) func) >> 4) | GIE); // Bitwise or with initial SR settings (enable interrupts)
 
-	// Make room for general purpose registers
+	// Make room for general purpose registers (using them as 16-bit registers, not 20-bit)
 	processes[i].stackPointer -= NUM_GEN_REGS;
 }
 
@@ -72,10 +78,8 @@ static void processTerminate() {
 
 	// Re-enable interrupts
 	_BIS_SR(GIE);
-	// Just wait for the interrupt to happen. This will never be returned to.
-	while (1) {
-
-	}
+	// Return control to the operating system. Not an issue if in the middle of calling this an interrupt happens, we won't return here anyway
+	sleep();
 }
 
 /*
@@ -97,7 +101,7 @@ unsigned char rtosRun() {
 	// Store the stack pointer at this point (will need it when there are no more processes)
 	// note, when restoring this, whatever is in R12 will be the return value.
 	asm volatile ("\tmovx.a R1, rtosStackPointer");
-	oldStackPointer = processes[0].stackPointer;
+	oldStackPointer = processes[0].stackPointer; // Prepare to load the stack pointer of the first process
 	// Set up timer to generate interrupt every 900us. Too short and OS takes a lot of time. Too long and the responsiveness of tasks will be poor.
 	// The faster the OS switches context, the lower we can justify this to be.
 	TA0CCR0 = 900;
@@ -126,7 +130,11 @@ inline uint8_t findNextProc() {
 	return nextProc;
 }
 
-void sleep() {
+/*
+ * Function to call to tell the OS to switch to another task for now.
+ * This is intended to be called by tasks that wish to end their current time slice and wait for their next
+ */
+inline void sleep() {
 	TA0CCTL0 |= CCIFG;
 }
 

@@ -14,6 +14,7 @@
 
 #define MAX_PROCS 3 // The maximum number of processes that can held at once
 #define NUM_GEN_REGS 12 // The number of general purpose registers (R4-R15)
+#define PROCESS_RAM 256 // Each process will have 256 words of ram
 #define LOAD_CONTEXT() asm volatile ( "\tpop r15 \n\t \
 	                 pop r14 \n\t\
 	                 pop r13 \n\t\
@@ -29,19 +30,16 @@
 	                 reti"\
 	               )
 
-#define PROCESS_RAM 256 // Each process will have 512 words of ram
 // The process control block struct
 typedef struct PCB {
 	uint8_t id; // The process id. This should map directly to the index of the array it's stored in
 	void (*function) (void); // The function itself
 	volatile uint16_t *stackPointer; // Where the process's stack pointer points to
-	uint16_t ram[PROCESS_RAM]; // The processes' ram
+	uint16_t ram[PROCESS_RAM]; // The process's ram
 } PCB;
 
-// Global variable to hold the processes
+// Global variable to hold the processes. Better method would be to dynamically allocate memory as needed.
 PCB processes[MAX_PROCS];
-//PCBNode* processes;
-//PCB pcb_test;
 
 // Hold the index (and id, inherently) of the current process
 volatile uint8_t currentProc;
@@ -60,6 +58,8 @@ volatile char procEnded;
 
 /*
  * Add the passed function as a process that will be given time slices when rtosRun() is invoked
+ *
+ * param func - A pointer to the function (task) to be initialized
  */
 void rtosInitTask(void (*func)(void));
 
@@ -70,14 +70,9 @@ void rtosInitTask(void (*func)(void));
 void rtosSetup();
 
 /*
- * Function that is returned to when a process terminates
+ * Called automatically when a process terminates.
  */
 static void processTerminate();
-/*
- * Run the currently loaded processes.
- *
- * Returns: 0 if all tasks completed, not 0 if an error occurred
- */
 
 /*
  * Remove a process from the pool of currently running ones
@@ -98,10 +93,12 @@ inline uint8_t findNextProc();
  * Function to call to tell the OS to switch to another task for now.
  * This is intended to be called by tasks that wish to end their current time slice and wait for their next
  */
-void sleep();
+inline void sleep();
 
 /*
- * Run the RTOS with the already loaded tasks/processes
+ * Run the currently loaded processes.
+ *
+ * return - 0 if all tasks completed, not 0 if an error occurred
  */
 unsigned char rtosRun();
 
