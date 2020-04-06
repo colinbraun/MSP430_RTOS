@@ -4,11 +4,16 @@
 #include "myGpio.h" // Required for the LCD
 #include "myClocks.h" // Required for the LCD
 #include "myLcd.h" // Required for the LCD
+#include <stdlib.h>
+#include <time.h>
 
 void task2(void);
 void task1(void);
 void task3(void);
 void scrollWords(char words[250]);
+
+// Global variables
+volatile unsigned char HoldGreenLED = 3;
 
 /**
  * main.c
@@ -35,31 +40,37 @@ void main(void) {
  * task1() function. Nothing here yet, just using it to test having multiple processes
  */
 void task3(void) {
+	srand(time(NULL));
+	TA3CCR0 = 40960; // setup TA2 timer to count for 10 seconds
+	TA3CTL = 0x01D4; // start TA2 timer from zero in UP mode with ACLK and input divider by 8
 	while (1) {
-		sleep();
-		P1OUT ^= BIT0; // Toggle the red LED (for now, to test that this is working)
+		if(TA3CTL & BIT0) {
+			HoldGreenLED = rand() % 26; // Generate a random number for HoldGreenLED between 0 and 25
+			TA3CTL &= ~BIT0; // reset timer flag
+		}
+		P1OUT ^= BIT0; // Toggle the red LED
+		sleep(); // Waiting for timer, return control to OS early
 	}
-	//return;
 }
 
 void task1(void) {
 	rtosInitTask(&task3); // Initialize task3, proving a task can start a task
 	P1DIR &= ~BIT1; // Set P1.1 as an input
 	unsigned int count = 0;
-	TA1CCR0 = 32768;     // setup TA2 timer to count for 1 second
-	TA1CTL = 0x0114;     // start TA2 timer from zero in UP mode with ACLK
+	TA1CCR0 = 32768; // setup TA2 timer to count for 1 second
+	TA1CTL = 0x0114; // start TA2 timer from zero in UP mode with ACLK
 	while (1) {
-		if (TA1CTL & BIT0)     // check if timer finished counting
+		if (TA1CTL & BIT0) // check if timer finished counting
 		{
-			TA1CTL &= ~BIT0;     // reset timer flag
-			// P9OUT ^= BIT7;       // toggle P9.7 (Green LED)
-			count++;             // increment counter
+			TA1CTL &= ~BIT0; // reset timer flag
+			count++; // increment counter
 			myLCD_displayNumber(count);
 		}
 		if (!(P1IN & BIT1)) {
 			scrollWords("START OVER");
 			count = 0;
 		}
+		sleep(); // Waiting for timer or user input, so sleep
 	}
 }
 
@@ -78,8 +89,6 @@ void task1(void) {
 // 03/18/2020  v1
 // for CE-422, Project 5
 //************************************************************************
-unsigned char HoldGreenLED = 3;
-
 void task2(void) {
 // Setup - runs once
 	unsigned char count = 0;   // local variable
