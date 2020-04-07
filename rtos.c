@@ -141,9 +141,7 @@ inline uint8_t findNextProc() {
  * Function to call to tell the OS to switch to another task for now.
  * This is intended to be called by tasks that wish to end their current time slice and wait for their next
  */
-inline void sleep() {
-	TA0CCTL0 |= CCIFG;
-}
+
 
 /*
  * NOTE <----------------------------------------------------------------------------

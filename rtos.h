@@ -93,9 +93,10 @@ inline uint8_t findNextProc();
 
 /*
  * Function to call to tell the OS to switch to another task for now.
- * This is intended to be called by tasks that wish to end their current time slice and wait for their next
+ * This is intended to be called by tasks that wish to end their current time slice and wait for their next.
+ * Inlining this was not working for some reason, just just changed it to a #define
  */
-inline void sleep();
+#define sleep() TA0CCTL0 |= CCIFG
 
 /*
  * Run the currently loaded processes.

@@ -6,6 +6,7 @@
 #include "myLcd.h" // Required for the LCD
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 void task2(void);
 void task1(void);
@@ -19,7 +20,7 @@ volatile unsigned char HoldGreenLED = 3;
  * main.c
  */
 void main(void) {
-	WDTCTL = WDTPW | WDTHOLD;	// stop watchdog timer
+	WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
 	initGPIO(); // Initialize General Purpose Inputs and Outputs for the LCD
 	initClocks(); // Initialize clocks for the LCD
 	myLCD_init(); // Initialize Liquid Crystal Display
@@ -37,22 +38,26 @@ void main(void) {
 }
 
 /*
- * task1() function. Nothing here yet, just using it to test having multiple processes
+ * task3(), every 10 seconds, assign a random value to HoldGreenLED and toggle the red LED (P1.0)
  */
 void task3(void) {
 	srand(time(NULL));
 	TA3CCR0 = 40960; // setup TA2 timer to count for 10 seconds
 	TA3CTL = 0x01D4; // start TA2 timer from zero in UP mode with ACLK and input divider by 8
 	while (1) {
-		if(TA3CTL & BIT0) {
+		if (TA3CTL & BIT0) {
 			HoldGreenLED = rand() % 26; // Generate a random number for HoldGreenLED between 0 and 25
 			TA3CTL &= ~BIT0; // reset timer flag
+			P1OUT ^= BIT0; // Toggle the red LED
 		}
-		P1OUT ^= BIT0; // Toggle the red LED
 		sleep(); // Waiting for timer, return control to OS early
 	}
 }
 
+/*
+ * task1() function. Every second, increment the number on the LCD.
+ * If the user pushes P1.1, display "START OVER" and restart count to 0.
+ */
 void task1(void) {
 	rtosInitTask(&task3); // Initialize task3, proving a task can start a task
 	P1DIR &= ~BIT1; // Set P1.1 as an input
