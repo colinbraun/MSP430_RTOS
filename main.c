@@ -15,6 +15,7 @@ void scrollWords(char words[250]);
 
 // Global variables
 volatile unsigned char HoldGreenLED = 3;
+volatile unsigned int numTimesButtonPressed = 0;
 
 /**
  * main.c
@@ -38,9 +39,15 @@ void main(void) {
 }
 
 /*
- * task3(), every 10 seconds, assign a random value to HoldGreenLED and toggle the red LED (P1.0)
+ * task3(), every 10 seconds, assign a random value to HoldGreenLED.
+ * Also toggle the red LED (P1.0) the number of times the LCD counter has been reset (triggered by button press).
+ * Toggle no more than 8 times every 10 seconds (logic to prevent that in task1)
  */
 void task3(void) {
+	unsigned int count = 0; // Count how many times the red LED (P1.0) has been toggled
+	unsigned int oldTime = 0; // The time immediately after toggling the redLED
+	unsigned int newTime = 0; // The current time (load the value when comparing to oldTime)
+	unsigned char timePassed = 0; // Keep track of whether or not 10 seconds have passed
 	srand(time(NULL));
 	TA3CCR0 = 40960; // setup TA2 timer to count for 10 seconds
 	TA3CTL = 0x01D4; // start TA2 timer from zero in UP mode with ACLK and input divider by 8
@@ -48,7 +55,21 @@ void task3(void) {
 		if (TA3CTL & BIT0) {
 			HoldGreenLED = rand() % 26; // Generate a random number for HoldGreenLED between 0 and 25
 			TA3CTL &= ~BIT0; // reset timer flag
-			P1OUT ^= BIT0; // Toggle the red LED
+			timePassed = 1; // 10 seconds have passed
+			oldTime = TA3R;
+		}
+		if (timePassed) {
+			if (count >= numTimesButtonPressed) {
+				timePassed = 0; // 10 seconds haven't passed.
+				count = 0; // The number of toggles on red LED is reset
+				continue; // Go back to beginning of loop
+			}
+			newTime = TA3R; // Prepare to check how much time has passed
+			if (newTime - oldTime > 4096) { // If 1 second has passed
+				oldTime = TA3R; // Start new comparison point
+				P1OUT ^= BIT0; // Toggle red LED
+				count++; // Increment num times LED has been toggled
+			}
 		}
 		sleep(); // Waiting for timer, return control to OS early
 	}
@@ -72,8 +93,11 @@ void task1(void) {
 			myLCD_displayNumber(count);
 		}
 		if (!(P1IN & BIT1)) {
-			scrollWords("START OVER");
-			count = 0;
+			numTimesButtonPressed++; // Update the number of times the button has been pressed
+			if (numTimesButtonPressed > 8) // If it's been pressed more than 8 times...
+				numTimesButtonPressed = 0; // Reset it to 0
+			scrollWords("START OVER"); // Display "START OVER" to the user
+			count = 0; // Restart the count to 0
 		}
 		sleep(); // Waiting for timer or user input, so sleep
 	}
