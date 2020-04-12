@@ -6,6 +6,7 @@
 Debug/*
 targetConfigs/*
 *.doc*
+turn_in/*
 
 # LCD library
 my*

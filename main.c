@@ -21,12 +21,11 @@ volatile unsigned int numTimesButtonPressed = 0;
  * main.c
  */
 void main(void) {
-	WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
+
+	rtosSetup(); // Initialize the RTOS
 	initGPIO(); // Initialize General Purpose Inputs and Outputs for the LCD
 	initClocks(); // Initialize clocks for the LCD
 	myLCD_init(); // Initialize Liquid Crystal Display
-
-	rtosSetup(); // Initialize the RTOS
 
 	// task3 is started in task1 to prove a task can start a task while the RTOS is running
 	rtosInitTask(&task1); // Initialize task1

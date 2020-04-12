@@ -16,6 +16,7 @@
  * Should be called before any other rtos function.
  */
 void rtosSetup() {
+	WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
 	rtosStarted = 0;
 	availableProcs = 0;
 	currentProc = 0;
