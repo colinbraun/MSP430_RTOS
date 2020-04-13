@@ -7,7 +7,6 @@
 
 #include "rtos.h"
 
-#define ENABLE_PINS 0xFFFE // Required to use inputs and outputs
 #define SMCLK 0x0200 // Timer ACLK source
 #define UP 0x0010 // Timer UP mode
 
