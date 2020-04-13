@@ -27,6 +27,8 @@ void main(void) {
 	initClocks(); // Initialize clocks for the LCD
 	myLCD_init(); // Initialize Liquid Crystal Display
 
+	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
+
 	// task3 is started in task1 to prove a task can start a task while the RTOS is running
 	rtosInitTask(&task1); // Initialize task1
 	rtosInitTask(&task2); // Initialize task2
@@ -47,6 +49,8 @@ void task3(void) {
 	unsigned int oldTime = 0; // The time immediately after toggling the redLED
 	unsigned int newTime = 0; // The current time (load the value when comparing to oldTime)
 	unsigned char timePassed = 0; // Keep track of whether or not 10 seconds have passed
+	P1DIR |= BIT0; // Set red LED (P1.0) to be an output
+	P1OUT &= ~BIT0; // Turn the red LED off initially
 	srand(time(NULL));
 	TA3CCR0 = 40960; // setup TA2 timer to count for 10 seconds
 	TA3CTL = 0x01D4; // start TA2 timer from zero in UP mode with ACLK and input divider by 8

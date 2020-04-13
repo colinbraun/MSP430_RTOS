@@ -17,13 +17,10 @@
  */
 void rtosSetup() {
 	WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
-	rtosStarted = 0;
-	availableProcs = 0;
-	currentProc = 0;
-	procEnded = 0;
-	PM5CTL0 = ENABLE_PINS; // Required to use inputs and outputs
-	P1DIR |= BIT0;
-	P1OUT &= ~BIT0;
+	rtosStarted = 0; // RTOS has not started
+	availableProcs = 0; // No used processes yet
+	currentProc = 0; // id of first task is 0
+	procEnded = 0; // A process has not terminated/ended yet
 	uint8_t i;
 	// Initialize all the process ids
 	for (i = 0; i < MAX_PROCS; i++) {
